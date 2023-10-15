@@ -333,6 +333,26 @@ Before merging files, there are two scenarios to consider:
 
 2. If the split point and the commit of the other branch are the same, it means the other branch is behind the HEAD in the same lineage. In this situation, the merge operation is essentially already done. We don't need to do anything but output: `Given branch is an ancestor of the current branch.`
 
-Here's the translation:
+For a given file, if one branch has modifications, the changes in that branch will be retained. If both branches have modifications and the content is the same, it will still be retained. These are all standard situations, and the generated new commit message is 'Merged [given branch name] into [current branch name]'.
 
-I'll provide a more straightforward example: merging '61abc' into 'master'. As illustrated in the diagram below, the color white indicates the file does not exist, while other different colors represent different content. The final result is already drawn in the diagram. The numbers indicate situations that correspond one-to-one with the previous diagram. For instance, in situation '1', the file in '61abc' has been modified, differing from the 'splitpoint', so its color changes. However, in 'master', there were no modifications. Thus, the resulting new Commit retains the file from '61abc'.
+However, if both branches have different modifications to the same file, Gitlet will encounter a conflict, not knowing which version to keep. Upon a conflict, it will first display 'Encountered a merge conflict.' Then, it will generate a conflicted file with the following format:
+
+`
+<<<<<<< HEAD
+contents of file in master branch
+=======
+contents of file in 61abc branch
+>>>>>>>
+`
+My specific approach is as follows: Taking the merging of '61abc' into 'master' as an example. First, place the master's Commit in the position of the merged Commit. Then, accumulate all the files from the split point, master, and 61abc Commits into a Map with ID as key and filename as value, naming it 'allfileMap'. Similarly, place the files from the aforementioned three Commits into individual Maps with ID as key and filename as value, naming them 'splitMap', 'masterMap', and '61abcMap'. By iterating through the 'allfileMap' keyset and assessing the presence and modifications of files in the other three Maps, you can discern the seven different situations mentioned. Then, for each file, perform operations like delete, overwrite, and direct write. This completes the merge operation.
+
+**Failure scenarios:**
+If there are files in the staging area, output 'You have uncommitted changes.'
+If the given branch doesn't exist, output 'A branch with that name does not exist.'
+If the provided branch is the same as the current branch, output 'Cannot merge a branch with itself.'
+If the working directory has a file tracked only by the merge commit and is about to be overwritten, output 'There is an untracked file in the way; delete it, or add and commit it first.'"
+
+
+
+
+
