@@ -176,7 +176,7 @@ There's a special Commit called the `merge commit`. As shown in the example diag
 
 **Failure scenario:** None.
 
-**global-log**
+### global-log
 `global-log`
 
 Print all Commits without concern for order. Simply read and print all Commits from the `objects` directory. The function below retrieves all Commits from the `objects` directory and stores them in a List form:
@@ -194,7 +194,7 @@ public static final File OBJECT_DIR = join(GITLET_DIR, "objects");
 
 **Failure scenario:** None.
 
-### find**
+### find
 `find [commitmessage]`
 
 Print all IDs of Commits with the same message as the input. Similar to the previous logic, read all the Commits, find the ones that match, and print their IDs. If multiple results are found, print each on a new line.
@@ -239,20 +239,17 @@ The last two sections are from extra credit content I didn't implement, so just 
 ### checkout
 `checkout` has three usage scenarios:
 
-1. 
-`checkout -- [filename]`
+1. `checkout -- [filename]`
 
 After committing, if a file `1.txt` exists in the working directory and you wish to modify its content or delete it, and later regret the decision, use this command to recover the file. If the file `filename` is tracked by the current Commit, write it to the working directory. If a file with the same name exists, overwrite it. If it doesn't, write directly.
 
 **Failure scenario:** If the file `filename` doesn't exist in the current Commit, output "File does not exist in that commit."
 
-2. 
-`checkout [commitID] -- [filename]`
+2. `checkout [commitID] -- [filename]`
 
 Similar to the first case, but now retrieve the file `filename` from a specific past Commit using its `commitID`.
 
-3. 
-`checkout [branchname]`
+3. `checkout [branchname]`
 
 Switch to a different branch. The process involves updating the working directory with files from the latest Commit of the target branch. If there's any overlap between the current and target branches' files, the ones from the target branch will overwrite those in the working directory.
 
