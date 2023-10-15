@@ -253,3 +253,42 @@ Similar to the first case, but now retrieve the file `filename` from a specific 
 
 Switch to a different branch. The process involves updating the working directory with files from the latest Commit of the target branch. If there's any overlap between the current and target branches' files, the ones from the target branch will overwrite those in the working directory.
 
+In this scenario, the `checkout` command is used to switch branches. Initially, the `HEAD` points to the latest `Commit` of the `master` branch. After executing `checkout 61abc`, the `HEAD` will now point to the latest `Commit` of the `61abc` branch, and the working directory files will be changed to the files contained within `Commit3B`. This file transition can be divided into three types of files:
+
+1. **Files tracked by both Commit3B and Commit3A:** For files with the same name but different blobIDs (i.e., different content), replace the original file with the one from `Commit3B`. If they have the same name and blobID, do nothing.
+
+2. **Files tracked only by Commit3A and not by Commit3B:** Directly delete these files.
+
+3. **Files tracked only by Commit3B and not by Commit3A:** Write these files directly into the working directory. However, there's an exception: for the third situation, if a file with the same name (e.g., `1.txt`) already exists in the working directory, this indicates that a new `1.txt` file was added to the working directory before executing `checkout` and hasn't been committed yet. In this case, since Gitlet is unsure whether to preserve the newly added `1.txt` or to overwrite it with the `1.txt` from `Commit3B`, to avoid potential data loss, Gitlet will throw an error, displaying "There is an untracked file in the way; delete it, or add and commit it first."
+
+Finally, update the `HEAD` to point to `Commit3B` and clear the staging area.
+
+**Failure scenarios:**
+1. If the `branchname` doesn't exist, output "No such branch exists."
+2. If the `branchname` is the current branch, output "No need to checkout the current branch."
+
+### branch
+`branch [branchname]`
+
+Create a new branch by adding a new file named `branchname` within the `heads` directory, containing the current commit ID. This operation does not alter the `HEAD` pointer; it merely creates a new branch. To switch between branches, continue using the `checkout` command.
+
+**Failure scenarios:** None.
+
+### rm-branch
+`rm-branch [branchname]`
+
+Delete a branch. The branch to be deleted cannot be the one currently pointed to by `HEAD`. The specific action involves deleting the `branchname` file within the `heads` directory.
+
+**Failure scenarios:**
+1. If the provided `branchname` does not exist, output "A branch with that name does not exist."
+2. If attempting to delete the current branch, output the error "Cannot remove the current branch."
+
+### reset
+`reset [commitID]`
+
+This command rolls back the version to the specified `commitID`. First, set the `HEAD` to point to the given `commitID`, followed by file operations. The operations here are essentially the same as those in `checkout branch`, allowing for code reuse. Specific implementation details should be thought through by developers. Lastly, clear the staging area.
+
+**Failure scenarios:**
+1. If the provided `commitID` doesn't exist, output "No commit with that id exists."
+2. Similar to the `checkout` overwrite error, an error may also arise here. Output "There is an untracked file in the way; delete it, or add and commit it first." If you reuse the `checkout` code, this second type of error is automatically handled (because it's already accounted for in the `checkout` code).
+
