@@ -1,6 +1,6 @@
 # Gitlet
 
-## The principle of Gitlet 
+### The principle of Gitlet 
 In principle, Gitlet is no different from Git. Both save the contents of all files in a version and allow switching between different versions, ensuring that all existing versions are not lost. So, how do you distinguish a version? The answer is to create a version snapshot with the "commit" command. It's like taking a photo of that moment with a camera and stringing the photos together in order. When you want to go back to a certain version, you just have to flip back in sequence. 
 
 When Gitlet is initialized, the system automatically creates an initial commit, called the "init Commit". This commit doesn't record any files. Subsequently, with every new version, a new commit is generated, which records the information of the files in that version.
@@ -13,7 +13,7 @@ This way, when switching versions, all that's needed is to delete 4.txt and add 
 
 Gitlet also supports branching functionality. When multiple people are working on development concurrently and to ensure there's no interference between them, multiple paths can be taken simultaneously. In Gitlet, this is called a branch. As illustrated below (though I cannot see the actual image), BranchA and BranchB represent two distinct branches. HeadA and HeadB are used to track the heads of all branches in Gitlet, while the Head points to the current commit. They are independent of each other. This means that the current directory's files are still just 2.txt and 4.txt. HeadB and HeadA merely serve a recording purpose and don't represent the directory's current commit. For instance, both the Head and HeadA can point to Commit3A simultaneously.
 
-## Gitlet Internal Structure Implementation:
+### Gitlet Internal Structure Implementation:
 Let's delve into the internal implementation of Gitlet. Firstly, the gitlet init command creates a .gitlet directory. This .gitlet directory is a hidden folder. On Windows, you need to turn on the option to view hidden files to see it. On Linux or macOS, you can view it using the ls -la command. Most of Gitlet's operations take place within this .gitlet directory. The structure of this directory is as shown in the code below:
 
      .gitlet
@@ -27,7 +27,7 @@ Let's delve into the internal implementation of Gitlet. Firstly, the gitlet init
      └── removestage
 
 
-## Objects
+### Objects
 "Objects" is a crucial concept in Gitlet. Each Commit corresponds to a Commit object, and each file corresponds to a Blob object. But how do you define an object? The answer lies in its unique hashcode. This hashcode is determined based on the unique information of each object, generated using the SHA-1 algorithm. I refer to this hashcode as an "ID". Only entities with the same ID can be considered the same object. All these objects are serialized and written into the "objects" directory. Each object corresponds to a file, with the filename being the 40-character object ID.
 
 For every file in Gitlet, it's stored in the form of a Blob. Different files correspond to different Blobs, while identical files correspond to the same Blob. How do we differentiate between files? Only files with both the same filename and content can be regarded as identical.
@@ -44,7 +44,7 @@ In terms of **Commit**, the identical object should encompass consistent attribu
 
 To summarize, the `objects` directory preserves all relevant Commit and file data. Irrespective of being a Commit or a file, each is referred to as an object. Every object is distinguished by a unique ID. Consequently, to identify a specific object, knowing its ID suffices to locate it within the `objects` directory.
 
-## refs
+### refs
 The `refs` directory contains the endpoint information for all branches. Within the `heads` folder, there are multiple files, each named after its respective branch. Taking the illustration below as an example:
 
 ```
@@ -56,10 +56,12 @@ The `refs` directory contains the endpoint information for all branches. Within 
 
 There are two branches: the default branch called `master` and a newly created one named `61abc`. The content of each file represents the 40-character ID of the terminal Commit. The content of the `master` file corresponds to the ID of `Commit3A`, while the content of the `61abc` file corresponds to the ID of `Commit3B`.
 
-## HEAD
+### HEAD
 The `HEAD` file contains the ID of the current pointing Commit. In the given illustration, the content of the `HEAD` file corresponds to the 40-character ID of `Commit2`.
 
-## stage
+### stage
 The `stage` serves as a staging area. When executing the command `gitlet add "a.txt"`, the file a.txt is merely staged temporarily. At this point, the Blob object for a.txt is created, but the Commit hasn't yet pointed to this Blob. Only after executing the `commit` command is the connection between the Commit and Blob truly established. For a more detailed understanding, you can refer to animations illustrating the `add` and `commit` processes in certain articles. In my implementation, I've separated `stage` into `addstage` and `removestage`. These respectively correspond to the operations needed for the `add` and `rm` commands, making the code easier to write.
+
+## Thought process behind writing each functionality.
 
 
