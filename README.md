@@ -64,4 +64,195 @@ The `stage` serves as a staging area. When executing the command `gitlet add "a.
 
 ## Thought process behind writing each functionality.
 
+### init
+
+Initialize the gitlet repository by first setting up the overarching `.gitlet` file structure. Following that, create a Commit object named `initCommit`. The `message` should be "initial commit", while both `parents` and `blobID` should be empty (note that it shouldn't be `null`, but an empty list. If it's `null`, it will cause an error during the hashcode generation). The `date` is set to "Thursday, 1 January 1970", which can be directly generated using the following code:
+
+```java
+this.currentTime = new Date(0);
+```
+
+The generated timestamp here isn't in the standard format. To get a String type timestamp, you can transform it using:
+
+```java
+private static String dateToTimeStamp(Date date) {
+    DateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
+    return dateFormat.format(date);
+}
+```
+
+Lastly, to generate the ID, you can use the code below. The `sha1()` function takes a String as input, so all variables need to be of String type to get the 40-character ID.
+
+```java
+private String generateID() {
+    return Utils.sha1(dateToTimeStamp(currentTime), message, parents.toString(), pathToBlobID.toString());
+}
+```
+
+With this, you've created an `initCommit` object. The next step is to write it into the `objects` directory.
+
+**Failure scenario:** If a `.gitlet` repository already exists, output "A Gitlet version-control system already exists in the current directory." and then exit.
+
+### add
+
+`add [filename]`
+
+The `add` operation will store all unsaved files in the form of a Blob. Remember that the objects you're storing must be instantiated, as:
+
+```java
+public class Commit implements Serializable { ... }
+public class Blob implements Serializable { ... }
+```
+
+Note that variables marked with `static` won't be stored, so avoid using the `static` keyword when declaring variables.
+
+Additionally, all stored filenames and their corresponding `blobID` should be written to the `addstage`, so they can be read during the next `commit` operation. Below are the instance variables of my `Commit`, `Blob`, and `Stage`. They are provided for reference:
+
+```java
+/*
+ * commit object
+*/
+private String message;
+private Map<String, String> pathToBlobID = new HashMap<>();
+private List<String> parents;
+private Date currentTime;
+private String id;
+private File commitSaveFileName;
+private String timeStamp;
+/*
+ * blob object
+*/
+private String id;
+private byte[] bytes;
+private File fileName;
+private String filePath;
+private File blobSaveFileName;
+/*
+ * stage object
+*/
+private Map<String, String> pathToBlobID = new HashMap<>();
+```
+
+**Failure scenario:** If the file doesn't exist, output "File does not exist."
+
+### commit
+`commit [message]`
+
+Create a new Commit object and save it. The specific implementation is as follows:
+
+- The `message` is the provided message information.
+
+- `parents` reference the previous Commit. The ID of the prior commit can be sourced from the HEAD, and the relevant object data can be accessed using this commit ID.
+
+- The `date` can be readily generated using `this.currentTime = new Date();`. Remember to adjust the format accordingly.
+
+- `BlobID` is a mapping structure (though lists can be employed, they may be less intuitive) that maps file paths to their respective file IDs. My approach involves copying the mapping from the previous Commit, then contrasting it against `addstage` to discern which files are to be retained and which are to be deleted. This addition and deletion process leverages the map's key-value pair functionalities.
+
+**Failure scenarios:**
+1. If there is no content in `addstage`, output the error message: "No changes added to the commit."
+2. If the `message` is empty, output the error message: "Please enter a commit message."
+
+### rm
+`rm [filename]`
+
+The `rm` function is designed to delete a file named `filename` from the working directory. This can be categorized into three scenarios:
+
+1. If the file has just been added to `addstage` but hasn't been committed, directly remove the Blob from `addstage`.
+  
+2. If the file is tracked by the current Commit and exists in the working directory, then add it to `removestage` and delete the file from the working directory. This will be recorded in the next commit.
+  
+3. If the file is tracked by the current Commit but doesn't exist in the working directory, simply add it to `removestage` (this situation arises if you manually delete the file after a commit, then execute `rm`; the second `rm` corresponds to this scenario).
+
+Other than these three scenarios, there shouldn't be any file named `filename` in the working directory, so `rm` only corresponds to these cases.
+
+**Failure scenario:** If the file is neither in the `addstage` nor tracked by the current Commit, it indicates that the file doesn't exist in the working directory. Output the error message: "No reason to remove the file."
+
+### log
+`log`
+
+Starting from the current Commit, it prints all Commit information in reverse until it reaches the `initCommit`. A loop can easily handle this task.
+
+There's a special Commit called the `merge commit`. As shown in the example diagram, a merge commit has two parents. When printing a merge commit, you only need to select the first one from the `parentsList`, because during the merge operation mentioned below, the parent that needs to be printed is placed in the first position of the List. 
+
+**Failure scenario:** None.
+
+**global-log**
+`global-log`
+
+Print all Commits without concern for order. Simply read and print all Commits from the `objects` directory. The function below retrieves all Commits from the `objects` directory and stores them in a List form:
+
+```java
+List<String> commitList = Utils.plainFilenamesIn(OBJECT_DIR);
+```
+
+The `OBJECT_DIR` here is custom-defined, and its definition is as follows. You can learn about these from Lab6. Make sure not to blindly copy and paste; you need to understand the logic :joy:.
+
+```java
+public static final File GITLET_DIR = join(CWD, ".gitlet");
+public static final File OBJECT_DIR = join(GITLET_DIR, "objects");
+```
+
+**Failure scenario:** None.
+
+### find**
+`find [commitmessage]`
+
+Print all IDs of Commits with the same message as the input. Similar to the previous logic, read all the Commits, find the ones that match, and print their IDs. If multiple results are found, print each on a new line.
+
+**Failure scenario:** None.
+
+### status
+`status`
+
+Display the following:
+
+```
+=== Branches ===
+*master
+other-branch
+
+=== Staged Files ===
+wug.txt
+wug2.txt
+
+=== Removed Files ===
+goodbye.txt
+
+=== Modifications Not Staged For Commit ===
+junk.txt (deleted)
+wug3.txt (modified)
+
+=== Untracked Files ===
+random.stuff
+```
+
+Start by printing all branches. You can read the names directly from the `Heads` directory. The current branch is identified by the contents of the `HEAD` file; just prefix it with an asterisk.
+
+The second section prints filenames stored in `addstage`.
+
+The third section prints filenames stored in `removestage`.
+
+The last two sections are from extra credit content I didn't implement, so just print the headings.
+
+**Failure scenario:** None.
+
+### checkout
+`checkout` has three usage scenarios:
+
+1. 
+`checkout -- [filename]`
+
+After committing, if a file `1.txt` exists in the working directory and you wish to modify its content or delete it, and later regret the decision, use this command to recover the file. If the file `filename` is tracked by the current Commit, write it to the working directory. If a file with the same name exists, overwrite it. If it doesn't, write directly.
+
+**Failure scenario:** If the file `filename` doesn't exist in the current Commit, output "File does not exist in that commit."
+
+2. 
+`checkout [commitID] -- [filename]`
+
+Similar to the first case, but now retrieve the file `filename` from a specific past Commit using its `commitID`.
+
+3. 
+`checkout [branchname]`
+
+Switch to a different branch. The process involves updating the working directory with files from the latest Commit of the target branch. If there's any overlap between the current and target branches' files, the ones from the target branch will overwrite those in the working directory.
 
