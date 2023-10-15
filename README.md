@@ -185,7 +185,7 @@ Print all Commits without concern for order. Simply read and print all Commits f
 List<String> commitList = Utils.plainFilenamesIn(OBJECT_DIR);
 ```
 
-The `OBJECT_DIR` here is custom-defined, and its definition is as follows. You can learn about these from Lab6. Make sure not to blindly copy and paste; you need to understand the logic :joy:.
+The `OBJECT_DIR` here is custom-defined, and its definition is as follows. You can learn about these from Lab6.
 
 ```java
 public static final File GITLET_DIR = join(CWD, ".gitlet");
