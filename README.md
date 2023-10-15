@@ -292,3 +292,47 @@ This command rolls back the version to the specified `commitID`. First, set the 
 1. If the provided `commitID` doesn't exist, output "No commit with that id exists."
 2. Similar to the `checkout` overwrite error, an error may also arise here. Output "There is an untracked file in the way; delete it, or add and commit it first." If you reuse the `checkout` code, this second type of error is automatically handled (because it's already accounted for in the `checkout` code).
 
+### merge
+`merge [branchname]`
+
+This command is designed to merge two branches, merging the `branchname` branch with the current branch. Thus, `branchname` cannot be the name of the current branch. The `merge` command is divided into two steps: first, finding the split point, and second, merging the files.
+
+The first thing to do is to determine the split point. This is the most recent common ancestor commit of the two branches being merged. This split point is crucial because subsequent operations will compare the split point, the current commit, and the commit from the branch being merged to determine which files should be retained.
+
+**Finding the Split Point:**
+
+The split point can be found by tracing back the commit history of both branches until they converge on a common commit. You can think of this as tracing the lineage of each branch until you find a shared ancestor.
+
+One approach is to start at the tip of each branch and work backward through its parent commits. For every commit in one branch, you check if it exists in the other branch. When you find a commit that is present in the histories of both branches, that's your split point.
+
+In terms of implementation, you might maintain two lists of commit IDs, one for each branch. Then, you can compare these lists to find the most recent commit ID that appears in both, which is the split point.
+
+Once the split point is identified, you can move on to the second step of the `merge` operation: the actual file merging process. This involves comparing the state of each file in the current commit, the merge target commit, and the split point, and deciding on the appropriate action based on the differences (or lack thereof) among these three states.
+
+**Existing Branch Structure**
+
+Given the branches: BranchA, BranchC, and BranchMaster, their split points are as follows:
+
+| Branch1      | Branch2      | Spilt Point |
+| ------------ | ------------ | ----------- |
+| BranchA      | BranchC      | Init commit |
+| BranchA      | BranchMaster | Init commit |
+| BranchC      | BranchMaster | commit3     |
+
+I trust you've understood the concept of the split point. Now, let's discuss how to find this split point. Definitely, we cannot use a brute force approach with two nested for loops, as this method has a time complexity of O(n^2), which is too high. You might want to consider alternative approaches.
+
+I use BFS (Breadth-First Search). Taking BranchA and BranchC as an example, we first traverse from the most recent commit backwards using BFS. For every commit traversed, we put its commitID and depth as a key-value pair in a Map. For instance, for BranchC, Commit4B's ID corresponds to a depth of 1, Commit3's ID corresponds to a depth of 2, and so on until we reach the initCommit. By the end of this traversal, we have two Maps: one for BranchC (MapC) and one for BranchA (MapA).
+
+Now, while iterating through the keys in MapA, if MapC also contains the same key, we note down the corresponding key and value from MapA as `minkey` and `minvalue`. As the iteration continues, if we encounter a key that's present in both maps and has a value in MapA that's less than `minvalue`, we update `minkey` and `minvalue`. Once we've finished iterating over the keys in MapA, the recorded `minkey` and `minvalue` correspond to the ID and depth of the split point. The search is complete with a time complexity of O(n). This way, we identify the split point.
+
+Next is the file merge operation. There's a reference video for this command's file merging, which is worth reviewing. It demonstrates merging the "other" branch into the HEAD branch.
+
+Before merging files, there are two scenarios to consider:
+
+1. If the split point and the HEAD branch's Commit are the same, it indicates that the other branch is ahead of the HEAD in the same lineage. In this case, we simply update the HEAD to the current commit of the other branch and output: `Current branch fast-forwarded.`
+
+2. If the split point and the commit of the other branch are the same, it means the other branch is behind the HEAD in the same lineage. In this situation, the merge operation is essentially already done. We don't need to do anything but output: `Given branch is an ancestor of the current branch.`
+
+Here's the translation:
+
+I'll provide a more straightforward example: merging '61abc' into 'master'. As illustrated in the diagram below, the color white indicates the file does not exist, while other different colors represent different content. The final result is already drawn in the diagram. The numbers indicate situations that correspond one-to-one with the previous diagram. For instance, in situation '1', the file in '61abc' has been modified, differing from the 'splitpoint', so its color changes. However, in 'master', there were no modifications. Thus, the resulting new Commit retains the file from '61abc'.
