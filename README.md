@@ -44,4 +44,22 @@ In terms of **Commit**, the identical object should encompass consistent attribu
 
 To summarize, the `objects` directory preserves all relevant Commit and file data. Irrespective of being a Commit or a file, each is referred to as an object. Every object is distinguished by a unique ID. Consequently, to identify a specific object, knowing its ID suffices to locate it within the `objects` directory.
 
+## refs
+The `refs` directory contains the endpoint information for all branches. Within the `heads` folder, there are multiple files, each named after its respective branch. Taking the illustration below as an example:
+
+```
+     |--refs
+     |    |--heads
+     |         |--master
+     |         |--61abc
+```
+
+There are two branches: the default branch called `master` and a newly created one named `61abc`. The content of each file represents the 40-character ID of the terminal Commit. The content of the `master` file corresponds to the ID of `Commit3A`, while the content of the `61abc` file corresponds to the ID of `Commit3B`.
+
+## HEAD
+The `HEAD` file contains the ID of the current pointing Commit. In the given illustration, the content of the `HEAD` file corresponds to the 40-character ID of `Commit2`.
+
+## stage
+The `stage` serves as a staging area. When executing the command `gitlet add "a.txt"`, the file a.txt is merely staged temporarily. At this point, the Blob object for a.txt is created, but the Commit hasn't yet pointed to this Blob. Only after executing the `commit` command is the connection between the Commit and Blob truly established. For a more detailed understanding, you can refer to animations illustrating the `add` and `commit` processes in certain articles. In my implementation, I've separated `stage` into `addstage` and `removestage`. These respectively correspond to the operations needed for the `add` and `rm` commands, making the code easier to write.
+
 
